@@ -37,6 +37,7 @@ import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.db.DbHumans;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.db.DbMedia;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.design.AlertBean;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.design.CrisisBean;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.design.MediaBean;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.CtAdministrator;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.CtAlert;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.CtAuthenticated;
@@ -49,15 +50,18 @@ import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtComment;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtCoordinatorID;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtCrisisID;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtEmail;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtGPSLocation;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtLogin;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtMediaID;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtMediaName;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtPassword;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtPhoneNumber;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.EtAlertStatus;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.EtCrisisStatus;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.EtCrisisType;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.EtHumanKind;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.EtMediaCategory;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.secondary.DtSMS;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.types.stdlib.DtDate;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.types.stdlib.DtDateAndTime;
@@ -240,10 +244,26 @@ public class IcrashSystem implements Serializable {
 		cmpSystemCtAdministrator.put(ctAdmin.login, ctAdmin);
 		cmpSystemCtAuthenticated.put(ctAdmin.login,	ctAdmin);
 
+		/**
+		 * DELETE
+		 */
+		for(int i = 0; i < 5; i++){
+			CtMedia m = new CtMedia();
+			m.init(new DtMediaID(new PtString(String.valueOf(i))), new DtMediaName(new PtString("Media_" + i)), new DtEmail(new PtString("Email_" + i)), EtMediaCategory.values()[i % 2]);
+			DbMedia.insertMedia(m);
+		}
+		/**
+		 * DELETE
+		 */
+		
+		
+		
 		// initialize relationships taking information from the DB
 		cmpSystemCtAlert = DbAlerts.getSystemAlerts();
 		cmpSystemCtCrisis = DbCrises.getSystemCrises();
 		cmpSystemCtHuman = DbHumans.getSystemHumans();
+		cmpSystemCtMedia = DbMedia.getSystemMedias();
+		
 		Hashtable<String, CtCoordinator> cmpSystemCtCoordinator = DbCoordinators.getSystemCoordinators();
 		for(CtCoordinator ctCoord: cmpSystemCtCoordinator.values()){
 			cmpSystemCtAuthenticated.put(ctCoord.login, ctCoord);
@@ -1203,24 +1223,14 @@ public class IcrashSystem implements Serializable {
 			// PreP 2
 			if (!isActorLoggedInCheck())
 				return new PtBoolean(false);
-						
-			// PreF 1
-			// TODO
-			// if (mediaList.isEmapty())
-			// 		return new PtBoolean(false);
-			
-			CtCrisis theCrisis = cmpSystemCtCrisis.get(aDtCrisisID.value.getValue());
+									
+			//CtCrisis theCrisis = cmpSystemCtCrisis.get(aDtCrisisID.value.getValue());
 
 			if (currentRequestingAuthenticatedActor instanceof ActCoordinator) {
 				ActCoordinator theActCoordinator = (ActCoordinator) currentRequestingAuthenticatedActor;
-
-				//TODO
 	
 				// PostF 4	
-				PtString aMessage = new PtString("The crisis "
-						+ "with ID '"
-						+ aDtCrisisID.value.getValue() + "' "
-								+ "is chosen for sharing!");
+				PtString aMessage = new PtString("The crisis with ID " + aDtCrisisID.value.getValue() + "is chosen for sharing!");
 				theActCoordinator.ieMessage(aMessage);
 				
 				return new PtBoolean(true);
@@ -1232,82 +1242,9 @@ public class IcrashSystem implements Serializable {
 		return new PtBoolean(true);
 	}
 	
-	public PtBoolean oeChooseMedia(DtMediaID aDtMediaID) {
-		try{
-			// PreP 1
-			if (!isSystemStartedCheck()) {
-				log.debug("Inside oeChooseMedia: the system is not started! Aborting...");
-				return new PtBoolean(false);
-			}
-																									
-			// PreP 2
-			if (!isActorLoggedInCheck())
-				return new PtBoolean(false);
-						
-			// PreF 1
-			// TODO
-			// if (mediaList.isEmpty())
-			// 		return new PtBoolean(false);
-			
-			CtMedia theMedia = cmpSystemCtMedia.get(aDtMediaID.value.getValue());
-
-			if (currentRequestingAuthenticatedActor instanceof ActCoordinator) {
-				ActCoordinator theActCoordinator = (ActCoordinator) currentRequestingAuthenticatedActor;
-
-	
-				// PostF 4	
-				PtString aMessage = new PtString("The media "
-						+ "with ID '"
-						+ aDtMediaID.value.getValue() + "' "
-								+ "is chosen for sharing!");
-				theActCoordinator.ieMessage(aMessage);
-				
-				return new PtBoolean(true);
-			}
-		}
-		catch (Exception e){
-			log.error("Exception in oeChooseMedia..." + e);
-		}
-		return new PtBoolean(true);
-	}
-	
-	
-	public PtBoolean oeSendToMedia(DtMediaID aDtMediaID) {
-		try{
-			// PreP 1
-			if (!isSystemStartedCheck()) {
-				log.debug("Inside oeSendToMedia: the system is not started! Aborting...");
-				return new PtBoolean(false);
-			}
-																									
-			// PreP 2
-			if (!isActorLoggedInCheck())
-				return new PtBoolean(false);
-						
-			// PreF 1
-			// TODO
-			// if (mediaList.isEmpty())
-			// 		return new PtBoolean(false);
-			
-			if (currentRequestingAuthenticatedActor instanceof ActCoordinator) {
-				ActCoordinator theActCoordinator = (ActCoordinator) currentRequestingAuthenticatedActor;
-
-	
-				// PostF 4	
-				PtString aMessage = new PtString("The crises sent to media ");
-				theActCoordinator.ieMessage(aMessage);
-				
-				return new PtBoolean(true);
-			}
-		}
-		catch (Exception e){
-			log.error("Exception in oeChooseMedia..." + e);
-		}
-		return new PtBoolean(true);
-	}
 	
 	public PtBoolean oeAddMedia(CtMedia aCtMedia){
-		try{
+		try{		
 			// PreP 1
 			if (!isSystemStartedCheck()) {
 				log.debug("Inside oeAddMedia: the system is not started! Aborting...");
@@ -1318,19 +1255,16 @@ public class IcrashSystem implements Serializable {
 			if (!isActorLoggedInCheck())
 				return new PtBoolean(false);
 			
-			if (currentRequestingAuthenticatedActor instanceof ActCoordinator) {
-				ActCoordinator theActCoordinator = (ActCoordinator) currentRequestingAuthenticatedActor;
-
-				DbMedia.insertMedia(aCtMedia);
-				
-							
-	
-				// PostF 4	
-				PtString aMessage = new PtString("The media " + aCtMedia.name.value.getValue() + " added");
-				theActCoordinator.ieMessage(aMessage);
-				
-				return new PtBoolean(true);
-			}
+			DbMedia.insertMedia(aCtMedia);
+			cmpSystemCtMedia.put(aCtMedia.id.value.getValue(), aCtMedia);
+			
+			
+			// PostF 4	
+			ActAdministrator actAdmin = env.getActAdministrator(new DtLogin(new PtString(AdminActors.values[0].name())));
+			PtString aMessage = new PtString("The media " + aCtMedia.name.value.getValue() + " added");
+			actAdmin.ieMessage(aMessage);
+			return new PtBoolean(true);
+			
 		}
 		catch (Exception e){
 			log.error("Exception in oeAddMedia..." + e);
@@ -1350,19 +1284,88 @@ public class IcrashSystem implements Serializable {
 			if (!isActorLoggedInCheck())
 				return new PtBoolean(false);
 			
-			if (currentRequestingAuthenticatedActor instanceof ActCoordinator) {
-				ActCoordinator theActCoordinator = (ActCoordinator) currentRequestingAuthenticatedActor;
+			if (currentRequestingAuthenticatedActor instanceof ActAdministrator) {
+				ActAdministrator theAtcAdministrator = (ActAdministrator) currentRequestingAuthenticatedActor;
 
-	
+				DbMedia.deleteMedia(aDtMediaID);				
+				
 				// PostF 4	
 				PtString aMessage = new PtString("The media with ID " + aDtMediaID.value.getValue() + " removed ");
-				theActCoordinator.ieMessage(aMessage);
+				theAtcAdministrator.ieMessage(aMessage);
 				
 				return new PtBoolean(true);
 			}
 		}
 		catch (Exception e){
 			log.error("Exception in oeRemoveMedia..." + e);
+		}
+		return new PtBoolean(true);
+		
+	}
+	
+	public PtBoolean oeGetMediaSet() {
+		try{
+			// PreP 1
+			if (!isSystemStartedCheck()) {
+				log.debug("Inside oeGetMediaSet: the system is not started! Aborting...");
+				return new PtBoolean(false);
+			}
+																				
+			// PreP 2
+			if (!isActorLoggedInCheck())
+				return new PtBoolean(false);
+			ActAdministrator actAdmin = (ActAdministrator) currentRequestingAuthenticatedActor;			
+			//ActAdministrator actAdmin = env.getActAdministrator(new DtLogin(new PtString(AdminActors.values[0].name())));
+			cmpSystemCtMedia = DbMedia.getSystemMedias();
+			actAdmin.getMediaContainer().removeAllItems();
+			for (String mediaKey : cmpSystemCtMedia.keySet()){
+				CtMedia media = cmpSystemCtMedia.get(mediaKey);
+				actAdmin.getMediaContainer().addBean(new MediaBean(
+							Integer.parseInt(media.id.toString()),
+							media.name.toString(),
+							media.email.toString(),
+							media.category.toString()								
+						));
+			}
+
+			System.out.println(cmpSystemCtMedia);
+			
+			// PostF 4
+			return new PtBoolean(true);
+			
+		}
+		catch (Exception e){
+			log.error("Exception in oeGetMediaSet..." + e);
+		}
+		return new PtBoolean(false);
+	}
+	
+	public PtBoolean oeSendToMedia(DtMediaID aDtMediaID){
+		try{
+			// PreP 1
+			if (!isSystemStartedCheck()) {
+				log.debug("Inside oeSendToMedia: the system is not started! Aborting...");
+				return new PtBoolean(false);
+			}
+																												
+			// PreP 2
+			if (!isActorLoggedInCheck())
+				return new PtBoolean(false);
+			
+			if (currentRequestingAuthenticatedActor instanceof ActCoordinator) {
+				ActCoordinator theActCoordinator = (ActCoordinator) currentRequestingAuthenticatedActor;
+
+				//SENDING
+				
+				// PostF 4	
+				PtString aMessage = new PtString("The crisis sent to the media with ID " + aDtMediaID.value.getValue());
+				theActCoordinator.ieMessage(aMessage);
+				
+				return new PtBoolean(true);
+			}
+		}
+		catch (Exception e){
+			log.error("Exception in oeSendToMedia..." + e);
 		}
 		return new PtBoolean(true);
 		

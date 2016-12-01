@@ -28,6 +28,7 @@ import com.vaadin.ui.GridLayout;
 import com.vaadin.ui.TextField;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.Label;
+import com.vaadin.ui.Notification;
 import com.vaadin.ui.Panel;
 import com.vaadin.ui.PasswordField;
 import com.vaadin.ui.Table;
@@ -35,6 +36,7 @@ import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.themes.ValoTheme;
 
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.entrypoints.AdministratorLauncher;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.entrypoints.MediaListLauncher;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.entrypoints.misc.CoordinatorServlet;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.environment.IcrashEnvironment;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.environment.actors.ActAdministrator;
@@ -104,7 +106,7 @@ public class AdminAuthView extends VerticalLayout implements View, Serializable 
 		
 		Panel messagesPanel = new Panel("Administrator messages");
 		messagesPanel.setWidth("580px");
-
+		
 		Table adminMessagesTable = new Table();
 		
 		adminMessagesTable.setContainerDataSource(actAdmin.getMessagesDataSource());
@@ -194,8 +196,11 @@ public class AdminAuthView extends VerticalLayout implements View, Serializable 
 		Button addCoordinator = new Button("Add coordinator");
 		Button deleteCoordinator = new Button("Delete coordinator");
 		
+		Button editMedia = new Button("Edit media list");
+		
 		addCoordinator.addStyleName(ValoTheme.BUTTON_HUGE);
 		deleteCoordinator.addStyleName(ValoTheme.BUTTON_HUGE);
+		editMedia.addStyleName(ValoTheme.BUTTON_HUGE);
 		logoutBtn.addStyleName(ValoTheme.BUTTON_HUGE);
 		
 		VerticalLayout buttons = new VerticalLayout();
@@ -208,7 +213,7 @@ public class AdminAuthView extends VerticalLayout implements View, Serializable 
 		
 		controlPanel.setContent(buttons);
 		
-		buttons.addComponents(addCoordinator, deleteCoordinator, logoutBtn);
+		buttons.addComponents(addCoordinator, deleteCoordinator, editMedia, logoutBtn);
 		
 		/******* DELETE COORDINATOR PANEL BEGIN *********/
 		Label idCaptionDel = new Label("ID");
@@ -261,6 +266,12 @@ public class AdminAuthView extends VerticalLayout implements View, Serializable 
 				idCoordDel.focus();
 			} else
 				delCoordPanel.setVisible(false);
+		});
+		
+		editMedia.addClickListener(event -> {
+			Notification.show("Editing...");			
+			String iCrashURL = "/iCrash/"; 			
+			Page.getCurrent().open(iCrashURL + MediaListLauncher.mediaListName, "_blank");
 		});
 		
 		/************************************************* MAIN BUTTONS LOGIC END *************************************************/

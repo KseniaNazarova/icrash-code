@@ -5,16 +5,32 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.Hashtable;
+import java.util.List;
 
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.CtCrisis;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.CtMedia;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtComment;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtCrisisID;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtEmail;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtGPSLocation;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtLatitude;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtLongitude;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtMediaID;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtMediaName;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.EtCrisisStatus;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.EtCrisisType;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.EtMediaCategory;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.types.stdlib.DtDate;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.types.stdlib.DtDateAndTime;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.types.stdlib.DtTime;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.types.stdlib.PtReal;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.types.stdlib.PtString;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.utils.ICrashUtils;
 
 public class DbMedia extends DbAbstract {
 
@@ -103,7 +119,7 @@ public class DbMedia extends DbAbstract {
 	}
 	
 	
-	static public void deleteMedia(CtMedia aCtMedia){
+	static public void deleteMedia(DtMediaID aDtmediaID){
 		try {
 			Class.forName("com.mysql.jdbc.Driver");			
 			conn = DriverManager.getConnection(url + dbName, userName, password);
@@ -111,7 +127,7 @@ public class DbMedia extends DbAbstract {
 
 			try {
 				String sql = "DELETE FROM " + dbName + ".media WHERE id = ?";
-				String id = aCtMedia.id.value.getValue();
+				String id = aDtmediaID.value.getValue();
 
 				PreparedStatement statement = conn.prepareStatement(sql);
 				statement.setString(1, id);
@@ -163,6 +179,59 @@ public class DbMedia extends DbAbstract {
 			e.printStackTrace();
 		}
 		
+	}
+	
+	static public Hashtable<String, CtMedia>  getSystemMedias(){
+		Hashtable<String, CtMedia> cmpSystemCtMedia = new Hashtable<String, CtMedia>();
+		
+
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+			
+			conn = DriverManager.getConnection(url + dbName, userName, password);
+			log.debug("Connected to the database");
+			try {
+				String sql = "SELECT * FROM " + dbName + ".media ";
+
+				PreparedStatement statement = conn.prepareStatement(sql);
+				ResultSet res = statement.executeQuery(sql);
+
+				CtMedia aCtMedia = null;
+
+				while (res.next()) {
+
+					aCtMedia = new CtMedia();
+					DtMediaID aId = new DtMediaID(new PtString(res.getString("id")));
+					DtMediaName aMediaName = new DtMediaName(new PtString(res.getString("name")));
+					DtEmail aEmail = new DtEmail(new PtString(res.getString("email")));
+					
+					String theCategory = res.getString("category");
+					EtMediaCategory aCategory = null;
+					
+					if (theCategory.equals(EtMediaCategory.category_1.name()))
+						aCategory = EtMediaCategory.category_1;
+					if (theCategory.equals(EtMediaCategory.category_2.name()))
+						aCategory = EtMediaCategory.category_2;
+					if (theCategory.equals(EtMediaCategory.category_3.name()))
+						aCategory = EtMediaCategory.category_3;
+					
+					aCtMedia.init(aId, aMediaName, aEmail, aCategory);
+					cmpSystemCtMedia.put(aCtMedia.id.value.getValue(), aCtMedia);
+
+				}
+
+			} catch (SQLException s) {
+				log.error("SQL statement is not executed! " + s);
+			}
+			conn.close();
+			log.debug("Disconnected from database");
+
+		} catch (Exception e) {
+			log.error("SQL connection problems ...");
+			e.printStackTrace();
+		}
+		
+		return cmpSystemCtMedia;
 	}
 	
 }

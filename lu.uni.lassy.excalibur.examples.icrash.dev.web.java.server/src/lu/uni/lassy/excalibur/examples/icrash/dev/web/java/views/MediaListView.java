@@ -1,14 +1,17 @@
 package lu.uni.lassy.excalibur.examples.icrash.dev.web.java.views;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.log4j.Logger;
 
 import com.vaadin.addon.touchkit.ui.HorizontalButtonGroup;
+import com.vaadin.data.fieldgroup.FieldGroup;
+import com.vaadin.data.fieldgroup.FieldGroup.CommitEvent;
+import com.vaadin.data.fieldgroup.FieldGroup.CommitException;
+import com.vaadin.data.fieldgroup.FieldGroup.CommitHandler;
 import com.vaadin.data.util.BeanItemContainer;
+import com.vaadin.data.util.filter.Not;
 import com.vaadin.navigator.View;
 import com.vaadin.navigator.ViewChangeListener.ViewChangeEvent;
 import com.vaadin.server.FontAwesome;
@@ -19,17 +22,28 @@ import com.vaadin.ui.Grid.MultiSelectionModel;
 import com.vaadin.ui.Grid.SelectionMode;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.Notification;
-import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
+import com.vaadin.ui.Window;
 import com.vaadin.ui.themes.ValoTheme;
 
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.environment.IcrashEnvironment;
-import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.environment.actors.ActCoordinator;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.environment.actors.ActAdministrator;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.IcrashSystem;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.design.CrisisBean;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.design.MediaBean;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.CtAdministrator;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.CtCoordinator;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.CtMedia;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtCoordinatorID;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtCrisisID;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtEmail;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtLogin;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtMediaID;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtMediaName;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.EtMediaCategory;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.types.stdlib.PtBoolean;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.types.stdlib.PtString;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.utils.AdminActors;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.utils.Log4JUtils;
 
 public class MediaListView extends VerticalLayout implements View, Serializable{
@@ -39,6 +53,9 @@ public class MediaListView extends VerticalLayout implements View, Serializable{
 
 	IcrashSystem sys = IcrashSystem.getInstance();
 	IcrashEnvironment env = IcrashEnvironment.getInstance();
+	
+	ActAdministrator actAdmin = env.getActAdministrator(new DtLogin(new PtString(AdminActors.values[0].name())));
+	CtAdministrator ctAdmin =  (CtAdministrator) sys.getCtAuthenticated(actAdmin);
 		
 	private Label welcomeText;
 	private Grid mediaGrid;
@@ -46,34 +63,62 @@ public class MediaListView extends VerticalLayout implements View, Serializable{
 	
 	public MediaListView(){
 		
+		
+		setSizeFull();		
 		welcomeText = new Label("List Of Media");
 		welcomeText.setSizeUndefined();
 		
-		MediaBean media1 = new MediaBean(1, "media1", "email1", "category_1");
-		MediaBean media2 = new MediaBean(2, "media2", "email2", "category_2");
-		MediaBean media3 = new MediaBean(3, "media3", "email3", "category_3");
-		MediaBean media4 = new MediaBean(4, "media4", "email4", "category_1");
-		MediaBean media5 = new MediaBean(5, "media5", "email5", "category_2");
-		MediaBean media6 = new MediaBean(6, "media6", "email6", "category_3");
-		MediaBean media7 = new MediaBean(7, "media7", "email7", "category_1");
+		actAdmin.oeGetMediaSet();
+		container = actAdmin.getMediaContainer();
 		
-		List<MediaBean> mediaList = new ArrayList<>(Arrays.asList(media1, media2, media3, media4, media5, media6, media7));
-		
-		container = new BeanItemContainer<>(MediaBean.class, mediaList);
 		mediaGrid = new Grid(container);
 		mediaGrid.setColumnOrder("id", "name", "email", "category");
 		mediaGrid.setSelectionMode(SelectionMode.MULTI);	
 		mediaGrid.setSizeUndefined();
 		mediaGrid.setResponsive(true);
 		mediaGrid.setImmediate(true);
-		mediaGrid.setEditorEnabled(true);
+		mediaGrid.setEditorEnabled(true);	
 		
-		mediaGrid.removeColumn("id");
 		
+		mediaGrid.getEditorFieldGroup().addCommitHandler(new FieldGroup.CommitHandler() {
+
+			private static final long serialVersionUID = -135627807328414159L;
+
+			@Override
+	        public void preCommit(FieldGroup.CommitEvent commitEvent) throws FieldGroup.CommitException {
+	        }
+
+	        @Override
+	        public void postCommit(FieldGroup.CommitEvent commitEvent) throws FieldGroup.CommitException {
+	        	MediaBean mediaBean = (MediaBean) mediaGrid.getEditedItemId();
+	        	CtMedia media = new CtMedia();
+	        	
+
+    			String theCategory = mediaBean.getCategory();
+				EtMediaCategory aCategory = null;
+
+				if (theCategory.equals(EtMediaCategory.category_1.name()))
+					aCategory = EtMediaCategory.category_1;
+				if (theCategory.equals(EtMediaCategory.category_2.name()))
+					aCategory = EtMediaCategory.category_2;
+				if (theCategory.equals(EtMediaCategory.category_3.name()))
+					aCategory = EtMediaCategory.category_3;
+				
+	        	media.init(new DtMediaID(new PtString(String.valueOf(mediaBean.getId()))), 
+	        			new DtMediaName(new PtString(mediaBean.getName())),  
+	        			new DtEmail(new PtString(mediaBean.getEmail())),				
+						aCategory);
+	        	actAdmin.oeAddMedia(media);
+				Notification.show(mediaBean.getId() + " edited");
+				
+	        }
+		});
+		
+				
 		HorizontalButtonGroup buttons = new HorizontalButtonGroup();
+		buttons.setSizeFull();
+			
 		Button addMediaButton = new Button("Add");
-		
-		
 		addMediaButton.addClickListener(e -> {
 			container.addBean(new MediaBean(null, "", "", ""));
 		});
@@ -83,20 +128,22 @@ public class MediaListView extends VerticalLayout implements View, Serializable{
 				
 		MultiSelectionModel selection = (MultiSelectionModel) mediaGrid.getSelectionModel();		
 		Button removeMediaButton = new Button("Remove", e -> {
-		    // Delete all selected data items
-		    for (Object itemId: selection.getSelectedRows())
-		    	mediaGrid.getContainerDataSource().removeItem(itemId);
+		    for (Object item: selection.getSelectedRows()){		    	
+		    	MediaBean mediaBean = (MediaBean)item;
+		    	mediaGrid.getContainerDataSource().removeItem(item);
+				PtBoolean res = actAdmin.oeRemoveMedia(new DtMediaID(new PtString(String.valueOf(mediaBean.getId()))));
+		    }
+
 		    mediaGrid.getSelectionModel().reset();
 		    e.getButton().setEnabled(false);
+		    
 		});
 		removeMediaButton.setEnabled(mediaGrid.getSelectedRows().size() > 0);
-		mediaGrid.addSelectionListener(selectionEvent -> { // Java 8
+		mediaGrid.addSelectionListener(selectionEvent -> {
 		    Notification.show(selectionEvent.getAdded().size() +
 		                      " items added, " +
 		                      selectionEvent.getRemoved().size() +
 		                      " removed.");
-
-		    // Allow deleting selected only if there's any selected
 		    removeMediaButton.setEnabled(mediaGrid.getSelectedRows().size() > 0);
 		});
 		

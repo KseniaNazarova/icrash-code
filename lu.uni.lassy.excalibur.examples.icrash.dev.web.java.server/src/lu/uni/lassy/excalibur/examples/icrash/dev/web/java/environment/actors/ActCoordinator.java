@@ -18,12 +18,14 @@ import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.IcrashSystem;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.design.ActorMessageBean;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.design.AlertBean;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.design.CrisisBean;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.design.MediaBean;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.CtAlert;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.CtCrisis;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtAlertID;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtComment;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtCrisisID;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtLogin;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtMediaID;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.EtAlertStatus;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.EtCrisisStatus;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.EtCrisisType;
@@ -255,6 +257,18 @@ public class ActCoordinator extends ActAuthenticated {
 		return new PtBoolean(true);
 	}
 	
+	public PtBoolean oeSendToMedia(DtMediaID aDtMediaID) {
+		
+		IcrashSystem sys = IcrashSystem.getInstance();
+		log.info("message ActCoordinator.oeSendToMedia sent to system");
+		PtBoolean res = sys.oeSendToMedia(aDtMediaID);
+			
+		if(res.getValue() == true)
+			log.info("operation oeSendToMedia successfully executed by the system");
+		
+		return new PtBoolean(true);
+	}
+	
 
 	public BeanItemContainer<AlertBean> getAlertsContainer() {
 		return alertsContainer;
@@ -263,4 +277,5 @@ public class ActCoordinator extends ActAuthenticated {
 	public BeanItemContainer<CrisisBean> getCrisesContainer() {
 		return crisesContainer;
 	}
+	
 }

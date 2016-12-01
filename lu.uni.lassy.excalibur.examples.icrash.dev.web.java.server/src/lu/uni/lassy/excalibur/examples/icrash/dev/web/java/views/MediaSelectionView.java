@@ -17,15 +17,24 @@ import com.vaadin.ui.Grid;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.Notification;
 import com.vaadin.ui.TextField;
+import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
+import com.vaadin.ui.Window;
 import com.vaadin.ui.themes.ValoTheme;
 import com.vaadin.ui.Grid.HeaderCell;
 import com.vaadin.ui.Grid.HeaderRow;
 import com.vaadin.ui.Grid.SelectionMode;
 
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.environment.IcrashEnvironment;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.environment.actors.ActAdministrator;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.environment.actors.ActCoordinator;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.IcrashSystem;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.design.MediaBean;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtLogin;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtMediaID;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.types.stdlib.PtBoolean;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.types.stdlib.PtString;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.utils.AdminActors;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.utils.Log4JUtils;
 
 public class MediaSelectionView extends VerticalLayout implements View, Serializable {
@@ -35,25 +44,21 @@ public class MediaSelectionView extends VerticalLayout implements View, Serializ
 
 	IcrashSystem sys = IcrashSystem.getInstance();
 	IcrashEnvironment env = IcrashEnvironment.getInstance();
+	
+
+	private ActAdministrator actAdmin = env.getActAdministrator(new DtLogin(new PtString(AdminActors.values[0].name())));
 		
 	private Label welcomeText;
 	private Grid mediaGrid;
 	private BeanItemContainer<MediaBean> container;
+	Window subWindow;
 	
 	public MediaSelectionView(){
 		welcomeText = new Label("Select media to share information");
 		welcomeText.setSizeUndefined();
-				
-		MediaBean media1 = new MediaBean(1, "media1", "email1", "category_1");
-		MediaBean media2 = new MediaBean(2, "media2", "email2", "category_2");
-		MediaBean media3 = new MediaBean(3, "media3", "email3", "category_3");
-		MediaBean media4 = new MediaBean(4, "media4", "email4", "category_1");
-		MediaBean media5 = new MediaBean(5, "media5", "email5", "category_2");
-		MediaBean media6 = new MediaBean(6, "media6", "email6", "category_3");
-		MediaBean media7 = new MediaBean(7, "media7", "email7", "category_1");
-		
-		List<MediaBean> mediaList = new ArrayList<>(Arrays.asList(media1, media2, media3, media4, media5, media6, media7));
-		container = new BeanItemContainer<>(MediaBean.class, mediaList);
+
+		actAdmin.oeGetMediaSet();
+		container = actAdmin.getMediaContainer();
 		mediaGrid = new Grid(container);
 		mediaGrid.setColumnOrder("id", "name", "email", "category");
 		mediaGrid.setSelectionMode(SelectionMode.MULTI);	
@@ -61,13 +66,16 @@ public class MediaSelectionView extends VerticalLayout implements View, Serializ
 		mediaGrid.setResponsive(true);
 		mediaGrid.setImmediate(true);
 		
-		mediaGrid.removeColumn("id");
-		mediaGrid.removeColumn("email");
-
 		filterColumn("category");
 		
 		Button sendButton = new Button("Send", e -> {			
 			Notification.show("Sending...", Notification.Type.TRAY_NOTIFICATION);
+			
+			for (Object item: mediaGrid.getSelectedRows()){		    	
+		    	MediaBean mediaBean = (MediaBean)item;
+		    	DtMediaID mediaID = new DtMediaID(new PtString(String.valueOf(mediaBean.getId())));
+		    }
+			UI.getCurrent().addWindow(subWindow);
 		});
 		
 		
@@ -78,6 +86,21 @@ public class MediaSelectionView extends VerticalLayout implements View, Serializ
 		setComponentAlignment(sendButton, Alignment.MIDDLE_CENTER);
 		
 		setMargin(true);
+		
+		subWindow = new Window("Sending..");
+	    VerticalLayout subContent = new VerticalLayout();
+	    subContent.setMargin(true);
+	    subWindow.setContent(subContent);
+	    subWindow.setSizeUndefined();
+
+	    // Put some components in it
+	    subContent.addComponent(new Label("Sending is successful"));
+	    subContent.addComponent(new Button("OK", e ->{
+	    	subWindow.close();
+	    }));
+
+	    // Center it in the browser window
+	    subWindow.center();
 		
 	}
 	

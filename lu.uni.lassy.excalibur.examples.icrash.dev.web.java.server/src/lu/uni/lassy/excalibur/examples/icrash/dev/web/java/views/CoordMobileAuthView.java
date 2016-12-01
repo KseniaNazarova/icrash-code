@@ -45,6 +45,7 @@ import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.entrypoints.MediaList
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.entrypoints.MediaSelectionLauncher;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.entrypoints.MsrCreatorLauncher;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.environment.IcrashEnvironment;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.environment.actors.ActAdministrator;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.environment.actors.ActCoordinator;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.IcrashSystem;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.design.AlertBean;
@@ -54,10 +55,12 @@ import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtComment;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtCoordinatorID;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtCrisisID;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.DtLogin;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.EtAlertStatus;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.system.types.primary.EtCrisisStatus;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.types.stdlib.PtBoolean;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.types.stdlib.PtString;
+import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.utils.AdminActors;
 import lu.uni.lassy.excalibur.examples.icrash.dev.web.java.utils.Log4JUtils;
 
 public class CoordMobileAuthView extends TabBarView implements View, Serializable {
@@ -228,9 +231,10 @@ public class CoordMobileAuthView extends TabBarView implements View, Serializabl
 
 		Button shareByCrisisBtn = new Button("Share");
 		shareByCrisisBtn.setImmediate(true);		
-
-		Button editMediaListBtn = new Button("Edit media list");
-		editMediaListBtn.setImmediate(true);		
+		ActAdministrator actAdmin = env.getActAdministrator(new DtLogin(new PtString(AdminActors.values[0].name())));
+		actAdmin.oeGetMediaSet();
+		shareByCrisisBtn.setEnabled(actAdmin.getMediaContainer().size() > 0);
+		
 		
 		crisesContent.addComponents(crisesBar, crisesButtons1, crisesButtons2, crisesTable, crisesButtons3, inputEventsTable2);
 				
@@ -258,7 +262,7 @@ public class CoordMobileAuthView extends TabBarView implements View, Serializabl
 		
 		crisesButtons1.addComponents(handleCrisesBtn, reportOnCrisisBtn, changeCrisisStatusBtn);
 		crisesButtons2.addComponents(closeCrisisBtn, getCrisesSetBtn, crisesStatus);
-		crisesButtons3.addComponents(shareByCrisisBtn, editMediaListBtn);
+		crisesButtons3.addComponents(shareByCrisisBtn);
 		crisesButtons3.setDefaultComponentAlignment(Alignment.TOP_RIGHT);
 		
 		////////////////////////////////////////
@@ -399,13 +403,7 @@ public class CoordMobileAuthView extends TabBarView implements View, Serializabl
 			if (crisesStatus.getValue().toString().equals("Pending"))
 				actCoordinator.oeGetCrisisSet(EtCrisisStatus.pending);
 		});
-		
-		editMediaListBtn.addClickListener(event -> {
-			Notification.show("Editing...");			
-			String iCrashURL = "/iCrash/"; 			
-			Page.getCurrent().open(iCrashURL + MediaListLauncher.mediaListName, "_blank");
-		});
-		
+				
 		shareByCrisisBtn.addClickListener(event -> {
 			CrisisBean selectedCrisisBean = (CrisisBean) crisesTable.getSelectedRow();
 			Integer thisCrisisID = new Integer(selectedCrisisBean.getID());
